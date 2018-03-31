@@ -92,26 +92,27 @@ def load_dataset(max_length, max_n_examples, tokenize=False, max_vocab_size=2048
 
     finished = False
 
-    for i in xrange(99):
-        path = data_dir+("/training-monolingual.tokenized.shuffled/news.en-{}-of-00100".format(str(i+1).zfill(5)))
-        with open(path, 'r') as f:
-            for line in f:
-                line = line[:-1]
-                if tokenize:
-                    line = tokenize_string(line)
-                else:
-                    line = tuple(line)
+    #for i in xrange(99):
+    #path = data_dir+("/training-monolingual.tokenized.shuffled/news.en-{}-of-00100".format(str(i+1).zfill(5)))
+    path = data_dir+("/nef.txt")
+    with open(path, 'r') as f:
+        for line in f:
+            line = line.rstrip().lower()
+            if tokenize:
+                line = tokenize_string(line)
+            else:
+                line = tuple(line)
 
-                if len(line) > max_length:
-                    line = line[:max_length]
+            if len(line) > max_length:
+                line = line[:max_length]
 
-                lines.append(line + ( ("`",)*(max_length-len(line)) ) )
+            lines.append(line + ( ("`",)*(max_length-len(line)) ) )
 
-                if len(lines) == max_n_examples:
-                    finished = True
-                    break
-        if finished:
-            break
+            if len(lines) == max_n_examples:
+                finished = True
+                break
+    #if finished:
+    #    break
 
     np.random.shuffle(lines)
 

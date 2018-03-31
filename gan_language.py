@@ -14,14 +14,14 @@ import tflib.plot
 
 # Download Google Billion Word at http://www.statmt.org/lm-benchmark/ and
 # fill in the path to the extracted files here!
-DATA_DIR = ''
+DATA_DIR = '/media/aean/0C86D24A86D23444/improved_wgan_training/trainset'
 if len(DATA_DIR) == 0:
     raise Exception('Please specify path to data directory in gan_language.py!')
 
 BATCH_SIZE = 64 # Batch size
-ITERS = 200000 # How many iterations to train for
-SEQ_LEN = 32 # Sequence length in characters
-DIM = 512 # Model dimensionality. This is fairly slow and overfits, even on
+ITERS = 800000 # How many iterations to train for
+SEQ_LEN = 12 # Sequence length in characters
+DIM = 32 # Model dimensionality. This is fairly slow and overfits, even on
           # Billion Word. Consider decreasing for smaller datasets.
 CRITIC_ITERS = 10 # How many critic iterations per generator iteration. We
                   # use 10 for the results in the paper, but 5 should work fine
@@ -64,9 +64,9 @@ def Generator(n_samples, prev_outputs=None):
     output = tf.reshape(output, [-1, DIM, SEQ_LEN])
     output = ResBlock('Generator.1', output)
     output = ResBlock('Generator.2', output)
-    output = ResBlock('Generator.3', output)
-    output = ResBlock('Generator.4', output)
-    output = ResBlock('Generator.5', output)
+#    output = ResBlock('Generator.3', output)
+#    output = ResBlock('Generator.4', output)
+#    output = ResBlock('Generator.5', output)
     output = lib.ops.conv1d.Conv1D('Generator.Output', DIM, len(charmap), 1, output)
     output = tf.transpose(output, [0, 2, 1])
     output = softmax(output)
@@ -77,9 +77,9 @@ def Discriminator(inputs):
     output = lib.ops.conv1d.Conv1D('Discriminator.Input', len(charmap), DIM, 1, output)
     output = ResBlock('Discriminator.1', output)
     output = ResBlock('Discriminator.2', output)
-    output = ResBlock('Discriminator.3', output)
-    output = ResBlock('Discriminator.4', output)
-    output = ResBlock('Discriminator.5', output)
+#    output = ResBlock('Discriminator.3', output)
+#    output = ResBlock('Discriminator.4', output)
+#    output = ResBlock('Discriminator.5', output)
     output = tf.reshape(output, [-1, SEQ_LEN*DIM])
     output = lib.ops.linear.Linear('Discriminator.Output', SEQ_LEN*DIM, 1, output)
     return output
@@ -138,13 +138,14 @@ with tf.Session() as session:
     session.run(tf.initialize_all_variables())
 
     def generate_samples():
-        samples = session.run(fake_inputs)
+        samples, discs = session.run([fake_inputs, disc_fake])
         samples = np.argmax(samples, axis=2)
         decoded_samples = []
         for i in xrange(len(samples)):
             decoded = []
             for j in xrange(len(samples[i])):
                 decoded.append(inv_charmap[samples[i][j]])
+            decoded.append(', ' + str(discs[i][0]))
             decoded_samples.append(tuple(decoded))
         return decoded_samples
 
@@ -168,7 +169,7 @@ with tf.Session() as session:
         lib.plot.plot('time', time.time() - start_time)
         lib.plot.plot('train disc cost', _disc_cost)
 
-        if iteration % 100 == 99:
+        if iteration % 1000 == 999:
             samples = []
             for i in xrange(10):
                 samples.extend(generate_samples())
@@ -182,7 +183,17 @@ with tf.Session() as session:
                     s = "".join(s)
                     f.write(s + "\n")
 
-        if iteration % 100 == 99:
+        if iteration % 100000 == 99999:
+            samples = []
+            for i in xrange(1000):
+                samples.extend(generate_samples())
+            with open('final_{}.txt'.format(iteration), 'w') as f:
+                for s in samples:
+                    s = "".join(s)
+                    f.write(s + "\n")
+
+        if iteration % 1000 == 999:
             lib.plot.flush()
         
         lib.plot.tick()
+
